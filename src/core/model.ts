@@ -222,7 +222,9 @@ export interface Assignment {
   startedAt?: string
   endedAt?: string
   endedReason?: string
-  report?: { state: ReportState; summary: string; at: string }
+  report?: { state: ReportState; summary: string; at: string
+    /** Files a ready result hands over, as absolute paths inside the ticket's workspace. */
+    attachments?: string[] }
   /** When Inputs last reached the worker; one at or after `report.at` means the worker has been busy with Inputs since that report. */
   deliveredAt?: string
   /**

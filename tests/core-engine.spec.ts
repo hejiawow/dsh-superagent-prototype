@@ -1048,6 +1048,19 @@ describe('replies', () => {
     expect(h.engine.reply({ purpose: 'result', ticketId, text: 'Done' })).toMatchObject({ status: 'pending' })
     expect(h.outbox.at(-1)!.channel).toEqual(trigger('1').channel)
   })
+  it('carries the files a ready report hands over on its single result, and none of a report that is not ready', () => {
+    const h = harness()
+    const ticketId = accepted(h).ticketId!
+    h.engine.report(ticketId, { state: 'progress', summary: 'Writing the plan.', attachments: ['/tmp/plan.md'] })
+    h.engine.report(ticketId, { state: 'ready', summary: 'The plan is ready.' })
+    h.engine.reply({ purpose: 'result', ticketId, text: 'The plan is ready.' })
+    expect(h.outbox.at(-1)).toMatchObject({ kind: 'reply', text: 'The plan is ready.' })
+    expect(h.outbox.at(-1)!.attachments).toBeUndefined()
+    const second = accepted(h, '3', 't3').ticketId!
+    h.engine.report(second, { state: 'ready', summary: 'Ready.', attachments: ['/tmp/plan.md', '/tmp/data.csv'] })
+    h.engine.reply({ purpose: 'result', ticketId: second, text: 'Ready.' })
+    expect(h.outbox.at(-1)!.attachments).toEqual(['/tmp/plan.md', '/tmp/data.csv'])
+  })
 })
 describe('ticket commands', () => {
   it('ends a ticket by the same rule on a close and on a ready report: once no PR it opened is open, as the latest of them ended', () => {

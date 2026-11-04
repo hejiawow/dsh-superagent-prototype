@@ -1,7 +1,7 @@
 /** The Engine's messages to Channels, each by the rule that allows it. */
 import { key } from './ids.ts'
 import { UserError } from './errors.ts'
-import { latestAssignment, liveTicket, ticketOutcome } from './model.ts'
+import { latestAssignment, latestReport, liveTicket, ticketOutcome } from './model.ts'
 import type { ChannelRef, Ticket, Trigger } from './model.ts'
 import type { ReplyStatus } from './ports.ts'
 import { EnginePart } from './part.ts'
@@ -83,7 +83,11 @@ export class Replies extends EnginePart {
     const asker = attention?.triggerId ? this.repo.triggers.get(attention.triggerId) : undefined
     const channel = request.purpose === 'answer' ? trigger!.channel : asker?.channel ?? (ticket ? this.sourceChannel(ticket) : undefined)
     if (!channel) throw new UserError('noChannel')
-    this.options.outbox.send({ id, channel, text: request.text, kind: 'reply', ...ticket ? { ticketId: ticket.id } : {} })
+    // A result hands over the files its ready report named, so the one result message carries them.
+    const reported = request.purpose === 'result' && ticket ? latestReport(ticket) : undefined
+    const attachments = reported?.state === 'ready' ? reported.attachments : undefined
+    this.options.outbox.send({ id, channel, text: request.text, kind: 'reply', ...ticket ? { ticketId: ticket.id } : {},
+      ...attachments?.length ? { attachments } : {} })
     if (request.purpose === 'answer' && ticket && trigger && ticket.answers?.includes(trigger.id)) {
       ticket.answers = ticket.answers.filter(item => item !== trigger.id)
       this.repo.tickets.save(ticket)

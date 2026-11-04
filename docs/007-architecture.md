@@ -375,7 +375,7 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `src/sources/teambition.ts` | The Teambition kind and plugin entry, exported as `./teambition-watch` |
 | `src/sources/teambition-trigger.ts` | Teambition task activity as Triggers: a comment that mentions the account, and an assignment to it |
 | `src/sources/teambition-loops.ts` | The Teambition poll loop: the account, each watched project's changed tasks, and each task's new activity |
-| `src/sources/teambition-channel.ts` | The Teambition Channel: comments on the task, `sent` or `gone`, deduplicated by the text already there |
+| `src/sources/teambition-channel.ts` | The Teambition Channel: comments on the task, `sent` or `gone`, deduplicated by the text already there, and the files a result hands over uploaded with its one comment |
 | `src/sources/teambition-read.ts` | A task's activity and the task itself, and `teambitionThreadContext`, which gives them to assessments |
 | `src/sources/admission-context.ts` | The bounded window an assessment starts from: the first pages of a Trigger's Thread, read through its kind, and the messages around the Trigger |
 | `src/sources/feishu-image.ts` | Reads a Feishu message's image as an attachment for the assessing Session |
@@ -418,6 +418,7 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `tests/commands.spec.ts` | CLI calls as the deployment's accounts, the Channels' answers, and repository-scoped GitHub calls |
 | `tests/feishu-read.spec.ts`, `tests/github-read.spec.ts` | Feishu and GitHub reads |
 | `tests/teambition-trigger.spec.ts` | Teambition activity to Trigger: comments, assignments, what the account wrote itself, and mention matching |
+| `tests/teambition-channel.spec.ts` | The Teambition Channel: one comment per result, the files a result uploads with it, and deduplication without a second upload |
 | `tests/admission-context.spec.ts`, `tests/feishu-image.spec.ts` | The Thread window of assessments, and Feishu image reads |
 | `tests/assessment.spec.ts` | What the MasterAssessor keeps per Eval, and when it lets go |
 | `tests/background.spec.ts` | Waiting for a worker's shell jobs and subagents: an end that woke it, and a host that stops |

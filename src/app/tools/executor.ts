@@ -1,4 +1,6 @@
 /** Executor Session tools for reading ticket context, acknowledging requests, managing threads, handing back out-of-scope triggers, and reporting status. */
+import { realpath, stat } from 'node:fs/promises'
+import { isAbsolute, relative, resolve, sep } from 'node:path'
 import { z } from 'zod'
 import { liveTicket, type EngineForExecutor, type Ticket } from '../../core/index.ts'
 import { IM_WORDS } from '../../infra/text.ts'
@@ -18,6 +20,29 @@ export interface ExecutorToolsHost {
   /** GitHub Source context whose pull-request rules govern claiming a reported PR. */
   readonly github: SourceContext
   sendReplies(): Promise<void>
+}
+
+/** Most files one result hands over, and the largest each may be, so a comment stays a comment and not a file share. */
+const MAX_ATTACHMENTS = 3, MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+/**
+ * Resolves the files a ready report hands over: each path must name a regular file inside the ticket's workspace, so a
+ * worker cannot hand over the operator's files, and the result message then carries the files themselves.
+ */
+async function handover(directory: string | undefined, paths: readonly string[], state: string): Promise<string[]> {
+  if (state !== 'ready') throw new Error('Attachments go only with a ready result')
+  if (!directory) throw new Error('The ticket has no workspace directory yet')
+  const root = await realpath(directory)
+  const files: string[] = []
+  for (const path of paths) {
+    const real = await realpath(resolve(root, path)).catch(() => { throw new Error(`Attachment ${path} is not a file in the ticket directory`) })
+    const inside = relative(root, real)
+    if (!inside || isAbsolute(inside) || inside === '..' || inside.startsWith(`..${sep}`)) throw new Error(`Attachment ${path} is outside the ticket directory`)
+    const info = await stat(real)
+    if (!info.isFile()) throw new Error(`Attachment ${path} is not a regular file`)
+    if (info.size > MAX_ATTACHMENT_BYTES) throw new Error(`Attachment ${path} is larger than ${MAX_ATTACHMENT_BYTES / 1024 / 1024} MB`)
+    if (!files.includes(real)) files.push(real)
+  }
+  return files
 }
 
 export function executorTools(host: ExecutorToolsHost, ticket: Ticket): Tool[] {
@@ -81,10 +106,13 @@ export function executorTools(host: ExecutorToolsHost, ticket: Ticket): Tool[] {
         question_for_trigger_id: z.string().optional().describe('With human_action: the human message that raised the question, which is asked where that person wrote.'),
         pr_number: z.number().int().positive().nullish().describe(`The ticket's PR: its source PR, or one by ${host.github.deployment.github.login} from a branch named after this ticket (DSH_SUPERAGENT_NAME).`),
         reply_to_trigger_id: z.string().optional().describe('The explicit human question this report answers; never for ordinary progress.'),
+        attachments: z.array(z.string().trim().min(1)).max(MAX_ATTACHMENTS).optional()
+          .describe('With state=ready: files this result hands over, as paths relative to the ticket directory (at most three); the result message carries them as attachments, so do not comment them yourself.'),
       }).strict(),
       execute: async (args, signal) => {
         const current = host.store.tickets.get(ticketId)
         if (!current || !liveTicket(current)) throw new Error('Ticket ended (PR was closed or work finished); do not resume it')
+        const files = args.attachments?.length ? await handover(current.execution?.directory, args.attachments, args.state) : undefined
         const pull = args.pr_number != null ? await readPull(host.github, args.pr_number, signal) : undefined
         // Claim the PR, record the report, and queue the relay atomically so a rejected PR claim or invalid report leaves no partial state, and a recorded report always reaches the main Session.
         return host.store.atomic(() => {
@@ -92,7 +120,8 @@ export function executorTools(host: ExecutorToolsHost, ticket: Ticket): Tool[] {
           if (refused) throw new Error(refused)
           const report = { state: args.state, summary: args.summary, ...(args.human_action !== undefined ? { question: args.human_action } : {}),
             ...(args.question_for_trigger_id ? { askedBy: args.question_for_trigger_id } : {}),
-            ...(args.reply_to_trigger_id ? { answers: args.reply_to_trigger_id } : {}) }
+            ...(args.reply_to_trigger_id ? { answers: args.reply_to_trigger_id } : {}),
+            ...(files?.length ? { attachments: files } : {}) }
           const updated = host.engine.report(ticketId, report)
           const relay = reportRelay(updated, report)
           if (relay) host.sessions.relay(relay.id, relay.text)

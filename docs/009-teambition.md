@@ -49,6 +49,12 @@ A reply is `task comment --task-id … --render-mode markdown --content …`, wi
 
 Acknowledgements, questions, results and pull request links all go to the task, the way GitHub's replies go to the thread.
 
+### Handing documents over
+
+A worker hands a person a document by writing it under the ticket directory and naming its relative path in the ready report's `attachments` (at most three, at most 10 MB each). The result comment carries the files themselves: the Channel uploads each one with `task upload-token-create`, PUTs its bytes to the signed URL, and posts one comment with the report text and `--file-tokens`. So a person sees one result comment with the file attached, not a second comment about a file, and the worker never posts on its own.
+
+The signed upload URL signs an empty Content-Type, so the upload sends none: a Content-Type header breaks the signature and Teambition answers `SignatureDoesNotMatch`. Paths are resolved against the ticket's workspace and must stay inside it, so a worker cannot hand over the operator's own files.
+
 ## Thread context
 
 `threadContext.read` maps `task activity` onto `ContextMessage`:
@@ -109,7 +115,7 @@ The CLI must point into a configuration directory holding only the dedicated acc
 - **The account is a person.** Comments and status changes appear as the dedicated account, and it is never the operator's own account. Everything [000 Philosophy](000-philosophy.md) says about responsibility belongs to whoever owns that account.
 - **OAuth expiry.** When the login can no longer be refreshed, the Source reports `error` and a person runs `auth login` again.
 - **No event subscription.** Latency equals `pollSeconds`; the panel shows the next poll.
-- **No attachments.** Files and images in comments do not reach assessments.
+- **No inbound attachments.** Files and images in comments do not reach assessments; a result's own documents are handed over as described under [Channels](#channels).
 - **No task creation.** The Source only reads tasks; it never creates, archives or deletes one.
 - **Status changes need rights.** `task update-status` fails unless the account may move into that status, so naming one does not by itself let a Ticket move a task.
 

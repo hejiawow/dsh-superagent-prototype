@@ -1,4 +1,6 @@
 /** Session tool registration, role-scoped resource reads, and routing/settings tool contracts. */
+import { mkdirSync, realpathSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { TICKET_STATES } from '../src/app/cards.ts'
 import { builtInBase, builtInParts, defaultPrompts } from '../src/app/prompts.ts'
@@ -253,6 +255,22 @@ it('returns where a reply stands: sent, or dropped when its conversation can no 
   expect(await reply('修好了。')).toEqual({ status: 'sent' })
   vi.mocked(Commands.prototype.lark).mockRejectedValue(new CliError('the message was withdrawn', 230011))
   expect(await reply('修好了，请看 PR。')).toEqual({ status: 'dropped' })
+})
+
+it('hands a ready report\'s files over with its result, and refuses a path outside the ticket directory', async () => {
+  const { ticket, sessionId } = await h.acceptedTicket(feishu('1', '@bot 写一份方案'))
+  const workspace = ticket.execution!.directory
+  mkdirSync(workspace, { recursive: true })
+  writeFileSync(join(workspace, 'plan.md'), '# 方案\n')
+  const outside = join(dirname(workspace), 'outside.md')
+  writeFileSync(outside, 'not this ticket')
+  const report = (args: Record<string, unknown>) => h.runTool(sessionId, 'orchestrator_report', args)
+  // Files go only with a ready result, and only from inside the workspace.
+  await expect(report({ state: 'progress', summary: 'Writing it.', attachments: ['plan.md'] })).rejects.toThrow('ready result')
+  await expect(report({ state: 'ready', summary: 'Done.', attachments: ['../outside.md'] })).rejects.toThrow('outside the ticket directory')
+  await expect(report({ state: 'ready', summary: 'Done.', attachments: ['missing.md'] })).rejects.toThrow('not a file in the ticket directory')
+  expect(await report({ state: 'ready', summary: 'Done.', attachments: ['plan.md'] })).toMatchObject({ reported: true })
+  expect(h.runtime.store.tickets.get(ticket.id)!.assignments.at(-1)!.report!.attachments).toEqual([realpathSync(join(workspace, 'plan.md'))])
 })
 
 it('checks an acknowledgement against the IM word limit, not a character count', async () => {
