@@ -13,8 +13,10 @@ export const teambitionChannel = (taskId: string, projectId: string, cli: string
     address: { taskId, projectId, cli, ...requester ? { requesterId: requester.id, requesterName: requester.name } : {} } })
 /** The feed names its creator only by id, but its sentence starts with the display name; the id is the fallback. */
 export function authorName(activity: TeambitionActivity): string {
-  const name = (activity.message ?? '').trim().split(/[:：]/)[0]?.trim() ?? ''
-  return name && name.length <= 40 && !/\s/.test(name) ? name : activity.creatorId ?? ''
+  // A comment speaks as `何佳: …`; an activity sentence as `何佳 指派给了 …`, whose first word is the name.
+  const sentence = (activity.message ?? '').trim()
+  const name = /[:：]/.test(sentence) ? sentence.split(/[:：]/)[0]!.trim() : sentence.split(/\s+/)[0] ?? ''
+  return name && name.length <= 40 ? name : activity.creatorId ?? ''
 }
 export const teambitionTriggerId = (activityId: string): string => key('teambition-activity', activityId)
 /** Teambition writes a mention as `@` plus the account's display name, so a mention is a text match on that name. */

@@ -60,3 +60,11 @@ it('matches a mention by display name only at a word boundary', () => {
   expect(mentions('@super-agent 看看', 'hj-agent')).toBe(false)
   expect(mentions('anything', '')).toBe(false)
 })
+
+it('reads the requester name from an assignment sentence as well as from a comment', () => {
+  const assigned = { ...assignment(agent.id), message: '何佳 指派给了 hj-agent' } as TeambitionActivity
+  const trigger = teambitionTrigger(assigned, task, 'assignment', agent, 'tb-agent')
+  expect(trigger.channel?.address.requesterName).toBe('何佳')
+  const said = { ...comment('@hj-agent 看一下'), message: '何佳: @hj-agent 看一下' }
+  expect(teambitionTrigger(said, task, 'comment', agent, 'tb-agent').channel?.address.requesterName).toBe('何佳')
+})
