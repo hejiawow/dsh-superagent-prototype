@@ -14,7 +14,7 @@ const ProjectSchema = z.object({
   projectId: z.string().regex(/^[0-9a-f]{24}$/),
   name: z.string().trim().max(80).optional(),
   listen: z.enum(['mentions', 'all']).default('mentions'),
-  doneNodeId: z.string().trim().max(64).optional(),
+  doneTfsId: z.string().regex(/^([0-9a-f]{24})?$/).optional(),
 }).strict()
 export const TeambitionConfigSchema = z.object({
   cli: z.string().trim().default(''),
@@ -42,7 +42,7 @@ export const teambitionKind: SourceKind<TeambitionConfig> = {
         { key: 'name', type: 'text', label: { zh: '名字', en: 'Name' }, optional: true },
         { key: 'listen', type: 'select', label: { zh: '接收', en: 'Receive' },
           options: [{ value: 'mentions', label: { zh: '仅 @', en: '@ only' } }, { value: 'all', label: { zh: '全部评论', en: 'All comments' } }] },
-        { key: 'doneNodeId', type: 'text', label: { zh: '完成时提交的节点', en: 'Node completed when done' }, optional: true },
+        { key: 'doneTfsId', type: 'text', pattern: '([0-9a-f]{24})?', label: { zh: '完成时移到状态', en: 'Status when done' }, optional: true },
       ] },
     { key: 'pollSeconds', type: 'number', advanced: true, min: 60, max: 900, label: { zh: '轮询间隔 / 秒', en: 'Poll interval / s' },
       hint: { zh: '两轮读取之间至少等待的时间；延迟等于这个值。', en: 'Least time between two rounds; latency equals it.' } },
@@ -109,7 +109,7 @@ export const teambitionKind: SourceKind<TeambitionConfig> = {
       { key: 'DSH_SUPERAGENT_TEAMBITION_TASK', description: { zh: '接下工单的 Teambition 任务 ID', en: 'The Teambition task that started the ticket' } },
       { key: 'DSH_SUPERAGENT_TEAMBITION_PROJECT', description: { zh: '该任务所在的项目 ID', en: 'The project of that task' } },
       { key: 'DSH_SUPERAGENT_TEAMBITION_TASK_URL', description: { zh: '该任务的链接', en: 'The task\'s URL' } },
-      { key: 'DSH_SUPERAGENT_TEAMBITION_DONE', description: { zh: '工单完成时该任务应移到的状态 ID；项目没有配置时为空', en: 'Status id a finished ticket moves the task to; empty when the project names none' } },
+      { key: 'DSH_SUPERAGENT_TEAMBITION_DONE', description: { zh: '工单完成后该任务应流转到的状态 ID（tfsId）；项目没有配置时为空，此时由人改状态', en: 'Status id (tfsId) a finished ticket moves the task to; empty when the project names none, and then a person changes it' } },
     ],
     values: ({ config, trigger }) => {
       const taskId = String(trigger?.source === SOURCE ? trigger.meta.taskId ?? '' : '')
@@ -117,7 +117,7 @@ export const teambitionKind: SourceKind<TeambitionConfig> = {
       const project: Project | undefined = config.projects.find(item => item.projectId === projectId)
       return { DSH_SUPERAGENT_TEAMBITION_TASK: taskId, DSH_SUPERAGENT_TEAMBITION_PROJECT: projectId,
         DSH_SUPERAGENT_TEAMBITION_TASK_URL: taskId ? teambitionTaskUrl(taskId) : '',
-        DSH_SUPERAGENT_TEAMBITION_DONE: project?.doneNodeId ?? '' }
+        DSH_SUPERAGENT_TEAMBITION_DONE: project?.doneTfsId ?? '' }
     },
   },
 }

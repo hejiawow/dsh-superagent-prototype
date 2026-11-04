@@ -79,13 +79,13 @@ Variables this Source registers with the execution environment:
 | `DSH_SUPERAGENT_TEAMBITION_TASK` | the task id the Ticket came from |
 | `DSH_SUPERAGENT_TEAMBITION_PROJECT` | its project id |
 | `DSH_SUPERAGENT_TEAMBITION_TASK_URL` | its URL |
-| `DSH_SUPERAGENT_TEAMBITION_DONE` | the workflow node a finished Ticket completes, or empty when the project names none |
+| `DSH_SUPERAGENT_TEAMBITION_DONE` | the workflow status a finished Ticket moves the task to, or empty when the project names none |
 
 The prepare command builds a worktree from whatever clone the operator names, exactly as for a GitHub Ticket, and the branch prefix stays `agent/`. A Ticket whose change belongs in a repository opens its pull request with the GitHub CLI already in `worker-bin`, then posts the link as a Teambition comment.
 
 Workers get a `teambition-cli` shim in `worker-bin` that runs the agent's wrapper, so every CLI call inside a Ticket acts as the dedicated account and never as the operator. Setup writes that shim from the Source's `cli` field; when no project names one, the shim fails with a message instead of falling back to an operator login.
 
-**Status changes.** The operator allowed the agent to move tasks, so a project may name the workflow node a finished Ticket completes (`doneNodeId`), which reaches the worker as `DSH_SUPERAGENT_TEAMBITION_DONE`. The team Delivery requirements section tells the worker to run `task node-done` with that node only once its change is ready, and never to guess a node, a status or a workflow. A project that names none is only commented on, and a person moves the task.
+**Status changes.** The operator allowed the agent to move tasks, so a project may name the workflow status a finished Ticket moves the task to (`doneTfsId`, the project's `taskflowstatus` id), which reaches the worker as `DSH_SUPERAGENT_TEAMBITION_DONE`. The team Delivery requirements section tells the worker to run `task update-status` with that status only once its change is ready, and never to guess a status or a workflow. A project that names none is only commented on, and a person moves the task. Handing work over this way is not an approval: a person still reviews and merges, so the status a project names is the one its team uses for "ready for review", such as 待发布, rather than its final status.
 
 ## The account
 
@@ -100,14 +100,14 @@ The CLI must point into a configuration directory holding only the dedicated acc
 - **No event subscription.** Latency equals `pollSeconds`; the panel shows the next poll.
 - **No attachments.** Files and images in comments do not reach assessments.
 - **No task creation.** The Source only reads tasks; it never creates, archives or deletes one.
-- **Node completion needs rights.** `task node-done` requires the account to be the node's owner or a project admin, so naming a node does not by itself let a Ticket complete it.
+- **Status changes need rights.** `task update-status` fails unless the account may move into that status, so naming one does not by itself let a Ticket move a task.
 
 ## Configuration form
 
 | Field | Type | Notes |
 | --- | --- | --- |
 | `cli` | text | the `tb-agent` wrapper; saving resolves the account and restarts dsh-superagent |
-| `projects` | rows | `projectId` (24-hex), `name`, optional `listen` and optional `doneNodeId` |
+| `projects` | rows | `projectId` (24-hex), `name`, optional `listen` and optional `doneTfsId` |
 | `pollSeconds` | number | advanced, 60–900, default 60 |
 | `readPageSize` | number | advanced, 1–50, default 20 |
 
