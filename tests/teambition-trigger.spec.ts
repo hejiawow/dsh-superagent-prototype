@@ -7,7 +7,7 @@ const task: TeambitionTask = { id: '6aeacbff7b450f53769887f6', content: '修正�
   created: '2026-11-04T06:09:03.595Z', updated: '2026-11-04T06:49:31.497Z' }
 const comment = (text: string, creatorId = '5e1da0eecc07fc0001f14e61'): TeambitionActivity => ({
   id: '6aead57b1a8eb4a9ef9b6d22', action: 'comment', creatorId, createTime: '2026-11-04T06:49:31.509Z',
-  content: JSON.stringify({ comment: text, renderMode: 'markdown', attachments: [] }),
+  message: `何佳: ${text}`, content: JSON.stringify({ comment: text, renderMode: 'markdown', attachments: [] }),
 })
 const assignment = (executorId: string, creatorId = '5e1da0eecc07fc0001f14e61'): TeambitionActivity => ({
   id: '6aead57b1a8eb4a9ef9b6d99', action: 'update_executor', creatorId, createTime: '2026-11-04T06:49:31.509Z',
@@ -22,7 +22,7 @@ it('turns a comment that mentions the account into an addressed Trigger on the t
     actor: { source: 'teambition', id: '5e1da0eecc07fc0001f14e61' }, human: true, addressed: 'mention',
     text: '@hj-agent 把这段文案改一下', url: 'https://www.teambition.com/task/6aeacbff7b450f53769887f6',
     channel: { source: 'teambition', thread: 'tb:task:6aeacbff7b450f53769887f6',
-      address: { taskId: task.id, projectId: task.projectId, cli: '/Users/me/.local/bin/tb-agent' } },
+      address: { taskId: task.id, projectId: task.projectId, cli: '/Users/me/.local/bin/tb-agent', requesterId: '5e1da0eecc07fc0001f14e61', requesterName: '何佳' } },
     meta: { taskId: task.id, projectId: task.projectId, taskTitle: task.content, kind: 'comment', activityId: '6aead57b1a8eb4a9ef9b6d22', commentId: '6aead57b1a8eb4a9ef9b6d22' },
   })
 })

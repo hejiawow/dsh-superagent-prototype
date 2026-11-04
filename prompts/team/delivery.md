@@ -26,3 +26,5 @@ Record whom you have credited in orchestrator_report, so a later worker does not
 If a human is working on the same problem and their branch or PR contains this ticket's code (commits from the ticket branch, or its changes carried over), close this ticket's PR with gh immediately without asking anyone, leaving one sentence on it that names the human's PR.
 Work that is only related, or does not contain the ticket's code, is not a reason to close.
 Closing the PR ends the ticket; send no other message.
+
+A ticket that came from Teambition reports on its task: `teambition-cli task comment --task-id $DSH_SUPERAGENT_TEAMBITION_TASK --render-mode markdown --content ...`, including the link of a pull request it opened. It completes node $DSH_SUPERAGENT_TEAMBITION_DONE with `teambition-cli task node-done --task-id $DSH_SUPERAGENT_TEAMBITION_TASK --node-id $DSH_SUPERAGENT_TEAMBITION_DONE` only when that variable names a node and the work is ready; otherwise a person moves the task. It never changes assignees, dates or other fields.

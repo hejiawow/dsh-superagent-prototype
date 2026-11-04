@@ -7,8 +7,15 @@ export const SOURCE = 'teambition'
 export const teambitionThread = (taskId: string): string => `tb:task:${taskId}`
 export const teambitionTaskUrl = (taskId: string): string => `https://www.teambition.com/task/${taskId}`
 /** Reply address: the task, plus the settings that wrote it so a reply never needs the current configuration. */
-export const teambitionChannel = (taskId: string, projectId: string, cli: string): ChannelRef =>
-  ({ source: SOURCE, thread: teambitionThread(taskId), address: { taskId, projectId, cli } })
+export const teambitionChannel = (taskId: string, projectId: string, cli: string,
+  requester?: { id: string; name: string }): ChannelRef =>
+  ({ source: SOURCE, thread: teambitionThread(taskId),
+    address: { taskId, projectId, cli, ...requester ? { requesterId: requester.id, requesterName: requester.name } : {} } })
+/** The feed names its creator only by id, but its sentence starts with the display name; the id is the fallback. */
+export function authorName(activity: TeambitionActivity): string {
+  const name = (activity.message ?? '').trim().split(/[:：]/)[0]?.trim() ?? ''
+  return name && name.length <= 40 && !/\s/.test(name) ? name : activity.creatorId ?? ''
+}
 export const teambitionTriggerId = (activityId: string): string => key('teambition-activity', activityId)
 /** Teambition writes a mention as `@` plus the account's display name, so a mention is a text match on that name. */
 export const mentions = (text: string, name: string): boolean => {
@@ -70,7 +77,7 @@ export function teambitionTrigger(activity: TeambitionActivity, task: Teambition
     human: true,
     ...(kind === 'comment' ? mentions(text, agent.name) ? { addressed: 'mention' as const } : {} : { addressed: 'direct' as const }),
     at, text,
-    channel: teambitionChannel(task.id, task.projectId, cli),
+    channel: teambitionChannel(task.id, task.projectId, cli, { id: activity.creatorId ?? '', name: authorName(activity) }),
     url: teambitionTaskUrl(task.id),
     meta: { taskId: task.id, projectId: task.projectId, taskTitle: title, kind,
       activityId: activity.id, ...(kind === 'comment' ? { commentId: activity.id } : {}) } }

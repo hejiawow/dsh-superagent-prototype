@@ -14,7 +14,7 @@ const ProjectSchema = z.object({
   projectId: z.string().regex(/^[0-9a-f]{24}$/),
   name: z.string().trim().max(80).optional(),
   listen: z.enum(['mentions', 'all']).default('mentions'),
-  doneTaskflowId: z.string().trim().max(64).optional(),
+  doneNodeId: z.string().trim().max(64).optional(),
 }).strict()
 export const TeambitionConfigSchema = z.object({
   cli: z.string().trim().default(''),
@@ -42,7 +42,7 @@ export const teambitionKind: SourceKind<TeambitionConfig> = {
         { key: 'name', type: 'text', label: { zh: '名字', en: 'Name' }, optional: true },
         { key: 'listen', type: 'select', label: { zh: '接收', en: 'Receive' },
           options: [{ value: 'mentions', label: { zh: '仅 @', en: '@ only' } }, { value: 'all', label: { zh: '全部评论', en: 'All comments' } }] },
-        { key: 'doneTaskflowId', type: 'text', label: { zh: '完成后移到', en: 'Move to when done' }, optional: true },
+        { key: 'doneNodeId', type: 'text', label: { zh: '完成时提交的节点', en: 'Node completed when done' }, optional: true },
       ] },
     { key: 'pollSeconds', type: 'number', advanced: true, min: 60, max: 900, label: { zh: '轮询间隔 / 秒', en: 'Poll interval / s' },
       hint: { zh: '两轮读取之间至少等待的时间；延迟等于这个值。', en: 'Least time between two rounds; latency equals it.' } },
@@ -117,7 +117,7 @@ export const teambitionKind: SourceKind<TeambitionConfig> = {
       const project: Project | undefined = config.projects.find(item => item.projectId === projectId)
       return { DSH_SUPERAGENT_TEAMBITION_TASK: taskId, DSH_SUPERAGENT_TEAMBITION_PROJECT: projectId,
         DSH_SUPERAGENT_TEAMBITION_TASK_URL: taskId ? teambitionTaskUrl(taskId) : '',
-        DSH_SUPERAGENT_TEAMBITION_DONE: project?.doneTaskflowId ?? '' }
+        DSH_SUPERAGENT_TEAMBITION_DONE: project?.doneNodeId ?? '' }
     },
   },
 }

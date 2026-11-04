@@ -3,16 +3,11 @@ import { z } from 'zod'
 import { isoTime, type Trigger } from '../core/index.ts'
 import type { Commands } from '../infra/commands.ts'
 import type { ContextMessage, ContextPart, ThreadContext } from './kind.ts'
-import { ActivitySchema, TaskSchema, commentText, listOf, taskText, type TeambitionActivity } from './teambition-trigger.ts'
+import { ActivitySchema, TaskSchema, authorName, commentText, listOf, taskText, type TeambitionActivity } from './teambition-trigger.ts'
 import type { TeambitionConfig } from './teambition.ts'
 
 const Activities = listOf(ActivitySchema)
 const Tasks = z.looseObject({ result: z.array(TaskSchema).default([]) })
-/** The activity feed names its creator only by id, but its sentence starts with the display name; the id is the fallback. */
-function authorName(activity: TeambitionActivity): string {
-  const name = (activity.message ?? '').trim().split(/[:：]/)[0]?.trim() ?? ''
-  return name && name.length <= 40 && !/\s/.test(name) ? name : activity.creatorId ?? ''
-}
 function message(activity: TeambitionActivity): ContextMessage | undefined {
   const text = activity.action === 'comment' ? commentText(activity) : (activity.message ?? '')
   if (!text) return undefined
