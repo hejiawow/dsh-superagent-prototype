@@ -18,6 +18,10 @@ import type { FeishuConfig } from './feishu.ts'
 export const runFeishu = (ctx: SourceContext, signal: AbortSignal): Promise<unknown> =>
   Promise.allSettled([watch, backfillLoop, chatNamesLoop].map(loop => loop(ctx, signal)))
 const enabled = (ctx: SourceContext): FeishuConfig | undefined => ctx.config<FeishuConfig>(SOURCE)
+/** A timer reads the configuration after dsh-superagent may have closed its store; treat that as "off" instead of crashing the process. */
+const stillEnabled = (ctx: SourceContext): boolean => {
+  try { return !!enabled(ctx) } catch { return false }
+}
 const bot = (ctx: SourceContext): FeishuBot => {
   const resolved = ctx.deployment.feishu
   if (!resolved) throw new Error('The Feishu Source has no working bot CLI')
@@ -52,7 +56,7 @@ async function watch(ctx: SourceContext, signal: AbortSignal): Promise<void> {
       continue
     }
     const running = new AbortController()
-    const check = setInterval(() => { if (!enabled(ctx)) running.abort() }, 5000)
+    const check = setInterval(() => { if (!stillEnabled(ctx)) running.abort() }, 5000)
     const stop = () => running.abort()
     signal.addEventListener('abort', stop, { once: true })
     const began = Date.now()
