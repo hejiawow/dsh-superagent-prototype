@@ -55,4 +55,13 @@ export const KV = {
   feishu: { chats: record<Record<string, boolean>>('feishu-chats'), history: family<string, [chat: string]>('feishu-history:'),
     topics: family<Record<string, string>, [chat: string]>('feishu-history-threads:'),
     seen: family<string[], [thread: string]>('thread-seen:'), initialized: family<boolean, [thread: string]>('thread-initialized:') },
+  /**
+   * Teambition Source: the account its CLI resolved, the task cursor of each watched project, the newest activity time read
+   * for each task, the comment ids this Source already wrote (the comment API has no idempotency key), and member names.
+   */
+  teambition: { account: record<{ cli: string; id: string; name: string }>('teambition-account'),
+    cursor: family<string, [project: string]>('teambition-cursor:'),
+    activity: family<string, [task: string]>('teambition-activity:'),
+    sent: family<string[], [task: string]>('teambition-sent:'),
+    names: record<Record<string, string>>('teambition-names') },
 }

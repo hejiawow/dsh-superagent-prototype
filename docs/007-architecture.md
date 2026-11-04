@@ -372,6 +372,11 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `src/sources/feishu-loops.ts` | The Feishu loops: the event consumer, history recovery, chat names and polling of subscribed topics |
 | `src/sources/feishu-channel.ts` | The Feishu Channel: topic replies, `sent` or `gone` |
 | `src/sources/feishu-read.ts` | The `feishu/` reads of a Trigger's message, its root, parent and topic, and `feishuThreadContext`, which gives them to assessments with their images |
+| `src/sources/teambition.ts` | The Teambition kind and plugin entry, exported as `./teambition-watch` |
+| `src/sources/teambition-trigger.ts` | Teambition task activity as Triggers: a comment that mentions the account, and an assignment to it |
+| `src/sources/teambition-loops.ts` | The Teambition poll loop: the account, each watched project's changed tasks, and each task's new activity |
+| `src/sources/teambition-channel.ts` | The Teambition Channel: comments on the task, `sent` or `gone`, deduplicated by the text already there |
+| `src/sources/teambition-read.ts` | A task's activity and the task itself, and `teambitionThreadContext`, which gives them to assessments |
 | `src/sources/admission-context.ts` | The bounded window an assessment starts from: the first pages of a Trigger's Thread, read through its kind, and the messages around the Trigger |
 | `src/sources/feishu-image.ts` | Reads a Feishu message's image as an attachment for the assessing Session |
 | `src/client/index.tsx` | The client plugin entry: the sidebar entry, the main panel and the page in DeepSeek Harness's Plugin Manager |
@@ -397,7 +402,9 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `src/client/locales.ts` | All copy in both languages, and the glossary of [001 Domain model](001-domain.md) |
 | `src/client/client.css`, `css.d.ts` | The panel's stylesheet, loaded as text |
 
-`src/sources/github.ts` and `src/sources/feishu.ts` are also the entries of the two Source plugins, built by `tsdown.config.ts` and exported in `package.json` as `./github-watch` and `./feishu-watch`. The bundle's `cordis.patch.yml` inserts the three plugins, with Feishu disabled.
+`src/sources/github.ts`, `src/sources/feishu.ts` and `src/sources/teambition.ts` are also the entries of the Source plugins, built by
+`tsdown.config.ts` and exported in `package.json` as `./github-watch`, `./feishu-watch` and `./teambition-watch`. The bundle's
+`cordis.patch.yml` inserts the four plugins, with Feishu and Teambition disabled.
 
 ## Tests
 
@@ -410,6 +417,7 @@ Some generic modules still refer directly to GitHub or Feishu:
 | `tests/sources.spec.ts` | The Feishu and GitHub Sources on a `SourceContext`: translation, polls and read positions, the pull request rules, health |
 | `tests/commands.spec.ts` | CLI calls as the deployment's accounts, the Channels' answers, and repository-scoped GitHub calls |
 | `tests/feishu-read.spec.ts`, `tests/github-read.spec.ts` | Feishu and GitHub reads |
+| `tests/teambition-trigger.spec.ts` | Teambition activity to Trigger: comments, assignments, what the account wrote itself, and mention matching |
 | `tests/admission-context.spec.ts`, `tests/feishu-image.spec.ts` | The Thread window of assessments, and Feishu image reads |
 | `tests/assessment.spec.ts` | What the MasterAssessor keeps per Eval, and when it lets go |
 | `tests/background.spec.ts` | Waiting for a worker's shell jobs and subagents: an end that woke it, and a host that stops |
