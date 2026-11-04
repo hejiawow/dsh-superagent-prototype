@@ -15,6 +15,9 @@ const ProjectSchema = z.object({
   name: z.string().trim().max(80).optional(),
   listen: z.enum(['mentions', 'all']).default('mentions'),
   doneTfsId: z.string().regex(/^([0-9a-f]{24})?$/).optional(),
+  /** The repository a Ticket of this project works in, and the local clone its worktree comes from. */
+  repo: z.string().trim().regex(/^([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)?$/, 'owner/name').default(''),
+  path: z.string().trim().regex(/^(\/[^\0]*)?$/, 'absolute path').default(''),
 }).strict()
 export const TeambitionConfigSchema = z.object({
   cli: z.string().trim().default(''),
@@ -43,6 +46,8 @@ export const teambitionKind: SourceKind<TeambitionConfig> = {
         { key: 'listen', type: 'select', label: { zh: '接收', en: 'Receive' },
           options: [{ value: 'mentions', label: { zh: '仅 @', en: '@ only' } }, { value: 'all', label: { zh: '全部评论', en: 'All comments' } }] },
         { key: 'doneTfsId', type: 'text', pattern: '([0-9a-f]{24})?', label: { zh: '完成时移到状态', en: 'Status when done' }, optional: true },
+        { key: 'repo', type: 'text', label: { zh: '仓库 owner/name', en: 'Repository owner/name' }, optional: true },
+        { key: 'path', type: 'text', label: { zh: '本地克隆', en: 'Local clone' }, optional: true },
       ] },
     { key: 'pollSeconds', type: 'number', advanced: true, min: 60, max: 900, label: { zh: '轮询间隔 / 秒', en: 'Poll interval / s' },
       hint: { zh: '两轮读取之间至少等待的时间；延迟等于这个值。', en: 'Least time between two rounds; latency equals it.' } },
@@ -109,6 +114,8 @@ export const teambitionKind: SourceKind<TeambitionConfig> = {
       { key: 'DSH_SUPERAGENT_TEAMBITION_TASK', description: { zh: '接下工单的 Teambition 任务 ID', en: 'The Teambition task that started the ticket' } },
       { key: 'DSH_SUPERAGENT_TEAMBITION_PROJECT', description: { zh: '该任务所在的项目 ID', en: 'The project of that task' } },
       { key: 'DSH_SUPERAGENT_TEAMBITION_TASK_URL', description: { zh: '该任务的链接', en: 'The task\'s URL' } },
+      { key: 'DSH_SUPERAGENT_TEAMBITION_REPO', description: { zh: '该项目的任务应改在哪个 GitHub 仓库，owner/name；项目没有配置时为空', en: 'The GitHub repository this project\'s tasks belong to, as owner/name; empty when the project names none' } },
+      { key: 'DSH_SUPERAGENT_TEAMBITION_PATH', description: { zh: '该仓库的本地克隆，工单的 worktree 从这里建；项目没有配置时为空', en: 'The local clone of that repository, from which a ticket\'s worktree is made; empty when the project names none' } },
       { key: 'DSH_SUPERAGENT_TEAMBITION_DONE', description: { zh: '工单完成后该任务应流转到的状态 ID（tfsId）；项目没有配置时为空，此时由人改状态', en: 'Status id (tfsId) a finished ticket moves the task to; empty when the project names none, and then a person changes it' } },
     ],
     values: ({ config, trigger }) => {
@@ -117,6 +124,7 @@ export const teambitionKind: SourceKind<TeambitionConfig> = {
       const project: Project | undefined = config.projects.find(item => item.projectId === projectId)
       return { DSH_SUPERAGENT_TEAMBITION_TASK: taskId, DSH_SUPERAGENT_TEAMBITION_PROJECT: projectId,
         DSH_SUPERAGENT_TEAMBITION_TASK_URL: taskId ? teambitionTaskUrl(taskId) : '',
+        DSH_SUPERAGENT_TEAMBITION_REPO: project?.repo ?? '', DSH_SUPERAGENT_TEAMBITION_PATH: project?.path ?? '',
         DSH_SUPERAGENT_TEAMBITION_DONE: project?.doneTfsId ?? '' }
     },
   },

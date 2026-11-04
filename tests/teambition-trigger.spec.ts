@@ -68,3 +68,18 @@ it('reads the requester name from an assignment sentence as well as from a comme
   const said = { ...comment('@hj-agent 看一下'), message: '何佳: @hj-agent 看一下' }
   expect(teambitionTrigger(said, task, 'comment', agent, 'tb-agent').channel?.address.requesterName).toBe('何佳')
 })
+
+it('registers the repository and clone path a project names, and empty values when it names none', async () => {
+  const { teambitionKind } = await import('../src/sources/teambition.ts')
+  const config = { cli: 'tb-agent', pollSeconds: 60, readPageSize: 20,
+    projects: [{ projectId: '6a9a60e25b0821fb32011faa', listen: 'mentions' as const, doneTfsId: '6a9a60e24b9cc0ae6da3fc5a',
+      repo: 'hejiawow/ai_tiku', path: '/Users/zhuanz/projects/ai_tiku' }] }
+  const trigger = teambitionTrigger(comment('@hj-agent 改一下'), task, 'comment', agent, 'tb-agent')
+  const values = teambitionKind.environment!.values({ deployment: undefined as never, config, trigger })
+  expect(values).toMatchObject({ DSH_SUPERAGENT_TEAMBITION_REPO: 'hejiawow/ai_tiku',
+    DSH_SUPERAGENT_TEAMBITION_PATH: '/Users/zhuanz/projects/ai_tiku', DSH_SUPERAGENT_TEAMBITION_DONE: '6a9a60e24b9cc0ae6da3fc5a',
+    DSH_SUPERAGENT_TEAMBITION_TASK: task.id })
+  const unmapped = teambitionKind.environment!.values({ deployment: undefined as never, config: { ...config, projects: [] }, trigger })
+  expect(unmapped.DSH_SUPERAGENT_TEAMBITION_REPO).toBe('')
+  expect(unmapped.DSH_SUPERAGENT_TEAMBITION_PATH).toBe('')
+})

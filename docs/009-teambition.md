@@ -79,9 +79,20 @@ Variables this Source registers with the execution environment:
 | `DSH_SUPERAGENT_TEAMBITION_TASK` | the task id the Ticket came from |
 | `DSH_SUPERAGENT_TEAMBITION_PROJECT` | its project id |
 | `DSH_SUPERAGENT_TEAMBITION_TASK_URL` | its URL |
+| `DSH_SUPERAGENT_TEAMBITION_REPO` | the GitHub repository the project's tasks belong to, or empty |
+| `DSH_SUPERAGENT_TEAMBITION_PATH` | the local clone a ticket's worktree comes from, or empty |
 | `DSH_SUPERAGENT_TEAMBITION_DONE` | the workflow status a finished Ticket moves the task to, or empty when the project names none |
 
-The prepare command builds a worktree from whatever clone the operator names, exactly as for a GitHub Ticket, and the branch prefix stays `agent/`. A Ticket whose change belongs in a repository opens its pull request with the GitHub CLI already in `worker-bin`, then posts the link as a Teambition comment.
+The prepare command builds a worktree from whatever clone the operator names, exactly as for a GitHub Ticket, and the branch prefix stays `agent/`. With `repo` and `path` on a project, one prepare command serves every project:
+
+```sh
+git -C "$DSH_SUPERAGENT_TEAMBITION_PATH" fetch --no-tags "https://github.com/$DSH_SUPERAGENT_TEAMBITION_REPO.git" \
+  "${DSH_SUPERAGENT_GITHUB_PR_HEAD:-HEAD}:refs/dsh-superagent/$DSH_SUPERAGENT_TICKET" &&
+git -C "$DSH_SUPERAGENT_TEAMBITION_PATH" worktree add -b "agent/$DSH_SUPERAGENT_NAME" "$DSH_SUPERAGENT_DIR" \
+  "refs/dsh-superagent/$DSH_SUPERAGENT_TICKET"
+```
+
+The GitHub Source still watches one repository, so a pull request opened in another repository is not followed: its CI and merge do not reach the ticket, and the Executor's report ends it. A Ticket whose change belongs in a repository opens its pull request with the GitHub CLI already in `worker-bin`, then posts the link as a Teambition comment.
 
 Workers get a `teambition-cli` shim in `worker-bin` that runs the agent's wrapper, so every CLI call inside a Ticket acts as the dedicated account and never as the operator. Setup writes that shim from the Source's `cli` field; when no project names one, the shim fails with a message instead of falling back to an operator login.
 
@@ -107,7 +118,7 @@ The CLI must point into a configuration directory holding only the dedicated acc
 | Field | Type | Notes |
 | --- | --- | --- |
 | `cli` | text | the `tb-agent` wrapper; saving resolves the account and restarts dsh-superagent |
-| `projects` | rows | `projectId` (24-hex), `name`, optional `listen` and optional `doneTfsId` |
+| `projects` | rows | `projectId` (24-hex), `name`, optional `listen`, `doneTfsId`, `repo` (owner/name) and `path` (a local clone) |
 | `pollSeconds` | number | advanced, 60–900, default 60 |
 | `readPageSize` | number | advanced, 1–50, default 20 |
 
