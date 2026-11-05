@@ -13,6 +13,9 @@ export const HEALTH_TEXT = {
   sourceOff: 'Off',
   feishuCliUnset: 'The Source is on, and its bot lark-cli is not set',
   feishuBotMissing: 'Waiting for the Feishu bot',
+  teambitionCliUnset: 'The Source is on, and its teambition-cli is not set',
+  teambitionAccountUnread: 'The teambition-cli did not report the account; sign it in again',
+  teambitionProjectUnreadable: 'The account cannot read the project {project}',
   pollFailures: '{count} consecutive failed polls; last: {error}',
 } as const
 export type HealthCode = keyof typeof HEALTH_TEXT

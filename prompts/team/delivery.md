@@ -26,3 +26,5 @@ Record whom you have credited in orchestrator_report, so a later worker does not
 If a human is working on the same problem and their branch or PR contains this ticket's code (commits from the ticket branch, or its changes carried over), close this ticket's PR with gh immediately without asking anyone, leaving one sentence on it that names the human's PR.
 Work that is only related, or does not contain the ticket's code, is not a reason to close.
 Closing the PR ends the ticket; send no other message.
+
+A ticket that came from Teambition carries $DSH_SUPERAGENT_TEAMBITION_TASK, and its report is delivered to that task, so do not comment on it yourself. When the project also names $DSH_SUPERAGENT_TEAMBITION_DONE and the work is ready, move the task to that status with `teambition-cli task update-status --task-id $DSH_SUPERAGENT_TEAMBITION_TASK --taskflowstatus-id $DSH_SUPERAGENT_TEAMBITION_DONE --tfs-update-note "<one line on what is ready>"`, which hands the task to a person for review and never stands for approval; otherwise a person moves the task. Never change assignees, dates or other fields.

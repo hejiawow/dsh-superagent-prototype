@@ -97,7 +97,17 @@ export class Commands {
     return path ? `repos/${this.repository}/${path}` : `repos/${this.repository}`
   }
   /**
-   * Runs the Feishu bot's `lark-cli` and returns the JSON `data` payload.
+   * Runs a Teambition CLI configuration with `--json` and validates the answer, whose envelope carries `code` and `result`.
+   * @throws CliError carrying Teambition's message when the business code is not 200.
+   */
+  async tb<T>(schema: z.ZodType<T>, cli: string, args: string[], cwd?: string): Promise<T> {
+    const output = await this.run(cli, [...args, '--json'], cwd)
+    const envelope = z.looseObject({ code: z.number().optional(), errorMessage: z.string().nullish() }).passthrough()
+      .parse(JSON.parse(output) as unknown)
+    if (envelope.code !== undefined && envelope.code !== 200) throw new CliError(envelope.errorMessage || 'Teambition command failed', envelope.code)
+    return schema.parse(envelope)
+  }
+  /** Runs the Feishu bot's `lark-cli` and returns the JSON `data` payload.
    * @throws CliError with Feishu's error code on failure (rewriting 232011 when the bot is not in the chat).
    */
   async lark<T>(args: string[], cwd?: string): Promise<T> {

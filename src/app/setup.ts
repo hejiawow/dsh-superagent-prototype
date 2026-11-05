@@ -83,7 +83,10 @@ export class Setup {
       context.logger.warn('dsh-superagent leaves Feishu out: %s', error.message)
       return undefined
     })
-    const resolved = { ...deployment, ...(feishu ? { feishu } : {}) }
+    // The Teambition Source verifies its own account, so setup only passes the CLI that workers may call through a shim.
+    const teambitionCli = String((settings.sources.teambition?.config as { cli?: unknown } | undefined)?.cli ?? '').trim()
+    const teambition = teambitionCli ? { cli: teambitionCli } : undefined
+    const resolved = { ...deployment, ...(feishu ? { feishu } : {}), ...(teambition ? { teambition } : {}) }
     const machineProblem = (error: unknown): never => {
       if (error instanceof SetupError) throw error
       throw new SetupError('environmentFailed', { output: error instanceof Error ? error.message : String(error) })
